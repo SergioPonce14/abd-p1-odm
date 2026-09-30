@@ -326,6 +326,28 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
 
     #TODO
     scope["Recinto"] = type("Recinto", (Model,), {})
+    scope["Recinto"].init_class(
+    db_collection=db["Recinto"],
+    indexes={
+        "nombre": "unique",
+        "aforo": "asc",
+        "direccion": "geosphere"
+    },
+    required_vars={
+        "nombre",
+        "direccion",
+        "aforo"
+    },
+    admissible_vars={
+        "nombre",
+        "direccion",
+        "aforo",
+        "zonas",
+        "servicios",
+        "direccion_loc"
+    }
+)
+    
     scope["Artista"] = type("Artista", (Model,), {})
     scope["Asistente"] = type("Asistente", (Model,), {})
     scope["Evento"] = type("Evento", (Model,), {})
