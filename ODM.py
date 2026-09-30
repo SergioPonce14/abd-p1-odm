@@ -107,6 +107,7 @@ class Model:
         """
         self._data: dict[str, str | dict | list] = {}
         #TODO
+          
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
        
@@ -250,14 +251,25 @@ class Model:
         cls._db = db_collection
         cls._required_vars = required_vars
         cls._admissible_vars = admissible_vars
-        for campo, tipo in indexes.items():
-          if tipo == "unique":
-            cls._db.create_index(campo, unique=True)
-          elif tipo == "asc":
-            cls._db.create_index(campo, pymongo.ASCENDING)
-          elif tipo == "geosphere":
-              cls._location_var = campo
-              cls._db.create_index(campo + "_loc", pymongo.GEOSPHERE)
+        # TODO
+        if indexes is not None:
+            for campo, tipo in indexes.items():
+                if tipo=="unique":
+                    cls._db.create_index([(campo, pymongo.ASCENDING)], unique=True)
+                elif tipo=="asc":
+                    cls._db.create_index([(campo, pymongo.ASCENDING)])   
+                elif tipo=="geosphere":
+                    cls._location_var=campo
+                    cls._db.create_index([(campo + "_loc", pymongo.GEOSPHERE)])
+
+
+        # Recorrer indexes y crear cada índice segun su tipo: 'unique', 'asc'
+        # y 'geosphere'. Comparar el tipo por igualdad, no con el operador 'in'.
+        # Ojo con el índice geoespacial: save() guarda el GeoJSON Point en
+        # <campo>_loc, luego el índice 2dsphere va sobre <campo>_loc, mientras
+        # que _location_var debe guardar el nombre del campo base.
+
+
 class ModelCursor:
     """ 
     Cursor para iterar sobre los documentos del resultado de una
@@ -356,6 +368,10 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     # indices y los atributos admitidos y requeridos para cada una de ellas.
     # Ejemplo de declaracion de modelo para colecion llamada MiModelo
     scope["MiModelo"] = type("MiModelo", (Model,),{})
+    scope["Recinto"] = type("Recinto", (Model,),{})
+    scope["Evento"] = type("Evento", (Model,),{})
+    scope["Artista"] = type("Artista", (Model,),{})
+    scope["Asistente"] = type("Asistente", (Model,),{})
     # La clase se declara en tiempo de ejecucion y queda en scope, que no tiene
     # por que ser el espacio de nombres global: las pruebas le pasan su propio
     # diccionario. Por eso se inicializa a traves de scope y no por su nombre,
