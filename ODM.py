@@ -109,6 +109,9 @@ class Model:
         #TODO
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
+       
+
+
 
         # Asigna todos los valores en kwargs a las atributos con 
         # nombre las claves en kwargs
@@ -146,6 +149,10 @@ class Model:
             raise AttributeError
         
     def save(self) -> None:
+
+
+
+        self._data
         """
         Guarda el modelo en la base de datos
         Si el modelo no existe en la base de datos, se crea un nuevo
@@ -243,14 +250,14 @@ class Model:
         cls._db = db_collection
         cls._required_vars = required_vars
         cls._admissible_vars = admissible_vars
-        # TODO
-        # Recorrer indexes y crear cada índice segun su tipo: 'unique', 'asc'
-        # y 'geosphere'. Comparar el tipo por igualdad, no con el operador 'in'.
-        # Ojo con el índice geoespacial: save() guarda el GeoJSON Point en
-        # <campo>_loc, luego el índice 2dsphere va sobre <campo>_loc, mientras
-        # que _location_var debe guardar el nombre del campo base.
-
-
+        for campo, tipo in indexes.items():
+          if tipo == "unique":
+            cls._db.create_index(campo, unique=True)
+          elif tipo == "asc":
+            cls._db.create_index(campo, pymongo.ASCENDING)
+          elif tipo == "geosphere":
+              cls._location_var = campo
+              cls._db.create_index(campo + "_loc", pymongo.GEOSPHERE)
 class ModelCursor:
     """ 
     Cursor para iterar sobre los documentos del resultado de una
@@ -318,6 +325,10 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     # Inicializar base de datos
 
     #TODO
+    scope["Recinto"] = type("Recinto", (Model,), {})
+    scope["Artista"] = type("Artista", (Model,), {})
+    scope["Asistente"] = type("Asistente", (Model,), {})
+    scope["Evento"] = type("Evento", (Model,), {})
     # Declarar tantas clases modelo colecciones existan en la base de datos
     # Leer el fichero de definiciones de modelos para obtener las colecciones,
     # indices y los atributos admitidos y requeridos para cada una de ellas.
