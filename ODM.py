@@ -165,12 +165,8 @@ class Model:
         pass #No olvidar eliminar esta linea una vez implementado
 
     def delete(self) -> None:
-        """
-        Elimina el modelo de la base de datos
-        """
-        #TODO
-        pass
-    
+       if "_id" in self._data:
+        self._db.delete_one({"_id": self._data["_id"]})
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
         """ 
