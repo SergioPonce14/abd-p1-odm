@@ -335,7 +335,17 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     """
     #TODO
     # Inicializar base de datos
+    client = MongoClient(mongodb_uri)
+    db = client[db_name]
 
+
+    with open(definitions_path, "r", encoding="utf-8") as f:
+        definitions = yaml.safe_load(f)
+
+    for tipo, variable in definitions.items():
+        cls = type(tipo, (Model,), {})
+        scope[tipo] = cls
+        cls.init_class(db_collection=db[tipo],indexes=variable.get("indexes", {}),required_vars=set(variable.get("required_vars", [])),admissible_vars=set(variable.get("admissible_vars", [])),)
     #TODO
     scope["Recinto"] = type("Recinto", (Model,), {})
     scope["Recinto"].init_class(
