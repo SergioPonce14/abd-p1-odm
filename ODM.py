@@ -107,8 +107,12 @@ class Model:
         """
         self._data: dict[str, str | dict | list] = {}
         #TODO
+          
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
+       
+
+
 
         # Asigna todos los valores en kwargs a las atributos con 
         # nombre las claves en kwargs
@@ -146,6 +150,10 @@ class Model:
             raise AttributeError
         
     def save(self) -> None:
+
+
+
+        self._data
         """
         Guarda el modelo en la base de datos
         Si el modelo no existe en la base de datos, se crea un nuevo
@@ -244,6 +252,17 @@ class Model:
         cls._required_vars = required_vars
         cls._admissible_vars = admissible_vars
         # TODO
+        if indexes is not None:
+            for campo, tipo in indexes.items():
+                if tipo=="unique":
+                    cls._db.create_index([(campo, pymongo.ASCENDING)], unique=True)
+                elif tipo=="asc":
+                    cls._db.create_index([(campo, pymongo.ASCENDING)])   
+                elif tipo=="geosphere":
+                    cls._location_var=campo
+                    cls._db.create_index([(campo + "_loc", pymongo.GEOSPHERE)])
+
+
         # Recorrer indexes y crear cada índice segun su tipo: 'unique', 'asc'
         # y 'geosphere'. Comparar el tipo por igualdad, no con el operador 'in'.
         # Ojo con el índice geoespacial: save() guarda el GeoJSON Point en
@@ -316,13 +335,53 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     """
     #TODO
     # Inicializar base de datos
+    client = MongoClient(mongodb_uri)
+    db = client[db_name]
 
+
+    with open(definitions_path, "r", encoding="utf-8") as f:
+        definitions = yaml.safe_load(f)
+
+    for tipo, variable in definitions.items():
+        cls = type(tipo, (Model,), {})
+        scope[tipo] = cls
+        cls.init_class(db_collection=db[tipo],indexes=variable.get("indexes", {}),required_vars=set(variable.get("required_vars", [])),admissible_vars=set(variable.get("admissible_vars", [])),)
     #TODO
+    scope["Recinto"] = type("Recinto", (Model,), {})
+    scope["Recinto"].init_class(
+    db_collection=db["Recinto"],
+    indexes={
+        "nombre": "unique",
+        "aforo": "asc",
+        "direccion": "geosphere"
+    },
+    required_vars={
+        "nombre",
+        "direccion",
+        "aforo"
+    },
+    admissible_vars={
+        "nombre",
+        "direccion",
+        "aforo",
+        "zonas",
+        "servicios",
+        "direccion_loc"
+    }
+)
+    
+    scope["Artista"] = type("Artista", (Model,), {})
+    scope["Asistente"] = type("Asistente", (Model,), {})
+    scope["Evento"] = type("Evento", (Model,), {})
     # Declarar tantas clases modelo colecciones existan en la base de datos
     # Leer el fichero de definiciones de modelos para obtener las colecciones,
     # indices y los atributos admitidos y requeridos para cada una de ellas.
     # Ejemplo de declaracion de modelo para colecion llamada MiModelo
     scope["MiModelo"] = type("MiModelo", (Model,),{})
+    scope["Recinto"] = type("Recinto", (Model,),{})
+    scope["Evento"] = type("Evento", (Model,),{})
+    scope["Artista"] = type("Artista", (Model,),{})
+    scope["Asistente"] = type("Asistente", (Model,),{})
     # La clase se declara en tiempo de ejecucion y queda en scope, que no tiene
     # por que ser el espacio de nombres global: las pruebas le pasan su propio
     # diccionario. Por eso se inicializa a traves de scope y no por su nombre,
