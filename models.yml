@@ -35,14 +35,12 @@ Artista:
     - pais
   admissible_vars:
     - genero
-    - inc
+    - inic  
   unique_indexes:
     - nombre
   regular_indexes:
-    - inc
+    - inic
   location_index: null
-
-
 
 Evento:
   required_vars:
@@ -52,14 +50,11 @@ Evento:
     - fecha
     - hora
   admissible_vars:
-    - num_Vendidas
+    - num_vendidas
     - precio
   unique_indexes:
     - titulo
-  regular_indexes:
-    - num_Vendidas
   location_index: null
-
 
 Asistente:
   required_vars:
@@ -69,7 +64,8 @@ Asistente:
     - fecha
   admissible_vars:
     - preferencias
+  regular_indexes: null
   unique_indexes:
     - nombre
-  regular_indexes: null
   location_index: direccion
+
