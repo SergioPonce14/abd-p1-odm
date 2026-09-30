@@ -291,30 +291,13 @@ class ModelCursor:
     """
 
     def __init__(self, model_class: Model, cursor: pymongo.cursor.Cursor):
-        """
-        Inicializa el cursor con la clase de modelo y el cursor de pymongo
-
-        Parameters
-        ----------
-            model_class : Model
-                Clase para crear los modelos de los documentos que se iteran.
-            cursor: pymongo.cursor.Cursor
-                Cursor de pymongo a iterar
-        """
+       
         self.model = model_class
         self.cursor = cursor
     
     def __iter__(self) -> Generator:
-        """
-        Devuelve un iterador que recorre los elementos del cursor
-        y devuelve los documentos en forma de objetos modelo.
-        Utilizar yield para generar el iterador
-        Utilizar la funcion next para obtener el siguiente documento del cursor
-        Utilizar alive para comprobar si existen mas documentos.
-        """
-        #TODO
-        pass #No olvidar eliminar esta linea una vez implementado
-
+        for doc in self.cursor:
+         return self.model(**doc)
 
 def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals()) -> None:
     """ 
@@ -337,57 +320,15 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     # Inicializar base de datos
     client = MongoClient(mongodb_uri)
     db = client[db_name]
-
-
+   
+    
     with open(definitions_path, "r", encoding="utf-8") as f:
         definitions = yaml.safe_load(f)
-
-    for tipo, variable in definitions.items():
-        cls = type(tipo, (Model,), {})
-        scope[tipo] = cls
-        cls.init_class(db_collection=db[tipo],indexes=variable.get("indexes", {}),required_vars=set(variable.get("required_vars", [])),admissible_vars=set(variable.get("admissible_vars", [])),)
-    #TODO
-    scope["Recinto"] = type("Recinto", (Model,), {})
-    scope["Recinto"].init_class(
-    db_collection=db["Recinto"],
-    indexes={
-        "nombre": "unique",
-        "aforo": "asc",
-        "direccion": "geosphere"
-    },
-    required_vars={
-        "nombre",
-        "direccion",
-        "aforo"
-    },
-    admissible_vars={
-        "nombre",
-        "direccion",
-        "aforo",
-        "zonas",
-        "servicios",
-        "direccion_loc"
-    }
-)
-    
-    scope["Artista"] = type("Artista", (Model,), {})
-    scope["Asistente"] = type("Asistente", (Model,), {})
-    scope["Evento"] = type("Evento", (Model,), {})
-    # Declarar tantas clases modelo colecciones existan en la base de datos
-    # Leer el fichero de definiciones de modelos para obtener las colecciones,
-    # indices y los atributos admitidos y requeridos para cada una de ellas.
-    # Ejemplo de declaracion de modelo para colecion llamada MiModelo
-    scope["MiModelo"] = type("MiModelo", (Model,),{})
-    scope["Recinto"] = type("Recinto", (Model,),{})
-    scope["Evento"] = type("Evento", (Model,),{})
-    scope["Artista"] = type("Artista", (Model,),{})
-    scope["Asistente"] = type("Asistente", (Model,),{})
-    # La clase se declara en tiempo de ejecucion y queda en scope, que no tiene
-    # por que ser el espacio de nombres global: las pruebas le pasan su propio
-    # diccionario. Por eso se inicializa a traves de scope y no por su nombre,
-    # que ahi todavia no existe.
-    scope["MiModelo"].init_class(db_collection=None, indexes=None, required_vars=None, admissible_vars=None)
-
+        for tipo, variable in definitions.items():
+                cls = type(tipo, (Model,), {})
+                scope[tipo] = cls
+                cls.init_class(db_collection=db[tipo],indexes=variable.get("indexes", {}),required_vars=set(variable.get("required_vars", [])),admissible_vars=set(variable.get("admissible_vars", [])),)
+   
 if __name__ == '__main__':
     
     # Inicializar base de datos y modelos con initApp
