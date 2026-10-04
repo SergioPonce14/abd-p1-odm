@@ -1,5 +1,5 @@
 __author__ = 'Pablo Ramos Criado'
-__students__ = 'Nombres_y_Apellidos'
+__students__ = 'Sergio Ponce Plaza e Isaac Cardenas Resino'
 
 
 from geopy.geocoders import Nominatim
@@ -131,7 +131,10 @@ class Model:
             super().__setattr__(name, value)
             return
         #TODO
+        if name not in self._admissible_vars:
+            raise ValueError(f"El atributo '{name}' no está admitido.")
         # Realizar las comprabociones y gestiones necesarias
+        self._admissible_vars.add(name)
         # antes de la asignacion.
 
         # Asigna el valor value a la variable name
