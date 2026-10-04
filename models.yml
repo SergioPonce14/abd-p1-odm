@@ -27,7 +27,7 @@ Recinto:
     - nombre
   regular_indexes:
     - aforo
-  location_index: direccion_loc
+  location_index: direccion
 
 Artista:
   required_vars:
@@ -69,6 +69,7 @@ Asistente:
     - fecha
   admissible_vars:
     - preferencias
+    - direccion_loc
   unique_indexes:
     - nombre
   regular_indexes: null

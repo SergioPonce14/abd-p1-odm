@@ -154,7 +154,6 @@ class Model:
 
 
 
-        self._data
         """
         Guarda el modelo en la base de datos
         Si el modelo no existe en la base de datos, se crea un nuevo
@@ -162,9 +161,31 @@ class Model:
         actualiza el documento existente con los nuevos valores del
         modelo.
         """
-        #TODO
-        pass #No olvidar eliminar esta linea una vez implementado
-
+        #primero vamos a comprobar si el modelo tiene un campo de direccion en el YAML  y si tiene valor
+        if self._location_var and self._location_var in self._data:
+            #buscamos coordenadas si el documento cambio o si es nuevo
+            if "_id" not in self._data or self._location_var in self._modified_vars:
+                coordenadas = getLocationPoint(self._data[self._location_var])
+                nombre_loc = self._location_var + "_loc"
+                
+                self._data[nombre_loc] = coordenadas
+                self._modified_vars.add(nombre_loc)
+        #ahora insertamos el nuevo documento, para saber si es nuevo comprobamos si este ya tiene un id
+        if "_id" not in self._data:
+            self._db.insert_one(self._data)
+            #limpiamos las variables modificadas al guardar
+            self._modified_vars.clear()
+        #si tiene id hay que actualizar
+        else:
+            camposActualizar={}
+            for campo in self._modified_vars:
+                #campo es el valor de los elementos guardados, nombre aforo...
+                camposActualizar[campo]=  self._data[campo]
+            self._db.update_one(
+                {"_id": self._data["_id"]},
+                {"$set": camposActualizar})
+            #limpiamos las variables modificadas al guardar
+            self._modified_vars.clear()
     def delete(self) -> None:
        if "_id" in self._data:#si tiene id
         self._db.delete_one({"_id": self._data["_id"]})#borra en mongo el documento con esa _id
@@ -321,13 +342,14 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     
     with open(definitions_path, "r", encoding="utf-8") as f:
         definitions = yaml.safe_load(f)
+        #or [] es para evitar un error si el models.yml tiene null
         for tipo, variable in definitions.items():
                 indices = {}
-                for campo in variable.get("unique_indexes"): 
+                for campo in variable.get("unique_indexes") or []: 
                     indices[campo] = "unique"
-                for campo in variable.get("regular_indexes"):
+                for campo in variable.get("regular_indexes") or []:
                     indices[campo] = "asc"
-                if variable.get("location_index"):  
+                if variable.get("location_index") or []:  
                     indices[variable["location_index"]] = "geosphere"
                 cls = type(tipo, (Model,), {})
                 scope[tipo] = cls
@@ -337,14 +359,21 @@ if __name__ == '__main__':
     
     # Inicializar base de datos y modelos con initApp
     #TODO
-    initApp()
+    initApp()#initApp funciona bien 
 
-    #Ejemplo
-    m = MiModelo(nombre="Pablo", apellido="Ramos", edad=18)
-    m.save()
-    m.nombre="Pedro"
-    print(m.nombre)
+    #pruebas iniciales 
+    r = Recinto(nombre="Wizink Center", aforo=15000, zonas=4, direccion="Avenida de Felipe II, s/n, Madrid")
+    # r.save() insertar funciona bien
 
+    print(f"Objeto guardado con ID: {r._data.get('_id')}")
+    r.aforo = 17000
+
+    print(f"Variables  para modificar: {r._modified_vars}")
+    # r.save() actualizar funciona bien 
+    # r.color_fachada = "Rojo" no se pueden insertar atributos no permitidos 
+    
+    
+    
     # Hacer pruebas para comprobar que funciona correctamente el modelo
     #TODO
     # Crear modelo
