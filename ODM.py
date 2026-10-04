@@ -1,5 +1,5 @@
 __author__ = 'Pablo Ramos Criado'
-__students__ = 'Sergio Ponce Plaza e Isaac Cardenas Resino'
+__students__ = 'Sergio Ponce Plaza e Isaac Cárdenas Resino'
 
 
 from geopy.geocoders import Nominatim
@@ -95,50 +95,48 @@ class Model:
     _internal_vars: set[str] = frozenset(('_modified_vars', '_required_vars', '_admissible_vars', '_db', '_data', '_location_var'))
 
     def __init__(self, **kwargs: dict[str, str | dict | list]) -> None:
-        """
-        Inicializa el modelo con los valores proporcionados en kwargs
-        Comprueba que los valores proporcionados en kwargs son admitidos
-        por el modelo y que las atributos requeridos son proporcionadas.
+        #Ejemplo de llamada Evento(titulo="Gira 2026", artistas=["Quevedo"], recinto="Wizink Center",  fecha="2026-11-14", hora="21:00", precio={"general": 45})
+        #**kwargs recoge los argumentos con su clave en un diccionario
+        self._data: dict[str, str | dict | list] = {}#diccionario vacio donde irán los datos
+        self._modified_vars = set()#conjunto vacio donde van los atributos modificadosal crear un objeto
 
-        Parameters
-        ----------
-            kwargs : dict[str, str | dict]
-                diccionario con los valores de las atributos del modelo
-        """
-        self._data: dict[str, str | dict | list] = {}
-        #TODO
-          
-        # Realizar las comprabociones y gestiones necesarias
-        # antes de la asignacion.
-       
+        permitidas = set(self._required_vars) | set(self._admissible_vars) | {"_id"}#unimps los argumentos requeridos con los admitidos junto su _id
+        if self._location_var:#si el location_var no es none
+          permitidas.add(self._location_var + "_loc")#se añade
 
+        faltan = self._required_vars - kwargs.keys()#calculamos si faltan atributos requeridos
+        if faltan:
+          raise ValueError(f"Faltan atributos requeridos: {faltan}")#si faltan salta una excepcion
 
+        sobran = kwargs.keys() - permitidas
+        if sobran:#y si sobran
+         raise ValueError(f"Atributos no admitidos: {sobran}")# salta una excepcion
 
-        # Asigna todos los valores en kwargs a las atributos con 
-        # nombre las claves en kwargs
-        # Utilizamos el atributo data para guardar los variables 
-        # almacenadas en la base de datos en una solo atributo
-        # Encapsular los datos en una sola variable facilita la 
-        # gestion en metodos como save.
-        self._data.update(kwargs)
+        self._data.update(kwargs)#añadimos el valor de kwargs en _data
+        #_data quedaria así self._data = {"titulo": "Gira 2026", "artistas": ["Isaac"], "recinto": "Wizink Center", "fecha": "2026-11-14", "hora": "21:00", "precio": {"general": 45}}
 
     def __setattr__(self, name: str, value: str | dict) -> None:
         """ Sobreescribe el metodo de asignacion de valores a los 
         atributos del objeto con el fin de controlar que atributos 
         son modificados y cuando son modificados.
         """
+        #ejemplo de hacer un set de el numero de entradas vendidas e.num_vendidas = 120
+        #comprueba si el name q en este ejemplo sería num_vendidas está en el ODM
+        #num_vendidas" no está ahí, así que el if no se cumple y se salta el if
         if name in self._internal_vars:
-            super().__setattr__(name, value)
+            super().__setattr__(name, value)#guarda el atributo odirectamente sin validar
             return
-        #TODO
-        if name not in self._admissible_vars:
-            raise ValueError(f"El atributo '{name}' no está admitido.")
-        # Realizar las comprabociones y gestiones necesarias
-        self._admissible_vars.add(name)
-        # antes de la asignacion.
+        
+        permitidasSet = set(self._required_vars) | set(self._admissible_vars) | {"_id"}#unimos los argumentos requeridos con los admitidos junto su _id
+        if self._location_var:#si es location var se guardara 
+         permitidasSet.add(self._location_var + "_loc")
 
-        # Asigna el valor value a la variable name
+        if name not in permitidasSet:#si el nombre no está en el conjunto salta una excepcion
+          raise ValueError(f"Atributo no admitido: {name}")
+        
+        # Guarda el valor en el diccionario de datos
         self._data[name] = value
+        self._modified_vars.add(name) # Apunta el campo como modificado para que save() solo actualice ese
 
     def __getattr__(self, name: str) -> Any:
         """ Sobreescribe el metodo de acceso a atributos del objeto
@@ -168,8 +166,8 @@ class Model:
         pass #No olvidar eliminar esta linea una vez implementado
 
     def delete(self) -> None:
-       if "_id" in self._data:
-        self._db.delete_one({"_id": self._data["_id"]})
+       if "_id" in self._data:#si tiene id
+        self._db.delete_one({"_id": self._data["_id"]})#borra en mongo el documento con esa _id
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
         """ 
@@ -324,6 +322,13 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     with open(definitions_path, "r", encoding="utf-8") as f:
         definitions = yaml.safe_load(f)
         for tipo, variable in definitions.items():
+                indices = {}
+                for campo in variable.get("unique_indexes"): 
+                    indices[campo] = "unique"
+                for campo in variable.get("regular_indexes"):
+                    indices[campo] = "asc"
+                if variable.get("location_index"):  
+                    indices[variable["location_index"]] = "geosphere"
                 cls = type(tipo, (Model,), {})
                 scope[tipo] = cls
                 cls.init_class(db_collection=db[tipo],indexes=variable.get("indexes", {}),required_vars=set(variable.get("required_vars", [])),admissible_vars=set(variable.get("admissible_vars", [])),)
