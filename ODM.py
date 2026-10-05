@@ -154,7 +154,6 @@ class Model:
 
 
 
-        self._data
         """
         Guarda el modelo en la base de datos
         Si el modelo no existe en la base de datos, se crea un nuevo
@@ -162,31 +161,39 @@ class Model:
         actualiza el documento existente con los nuevos valores del
         modelo.
         """
-        #TODO
-        pass #No olvidar eliminar esta linea una vez implementado
-
+        #primero vamos a comprobar si el modelo tiene un campo de direccion en el YAML  y si tiene valor
+        if self._location_var and self._location_var in self._data:
+            #buscamos coordenadas si el documento cambio o si es nuevo
+            if "_id" not in self._data or self._location_var in self._modified_vars:
+                coordenadas = getLocationPoint(self._data[self._location_var])
+                nombre_loc = self._location_var + "_loc"
+                
+                self._data[nombre_loc] = coordenadas
+                self._modified_vars.add(nombre_loc)
+        #ahora insertamos el nuevo documento, para saber si es nuevo comprobamos si este ya tiene un id
+        if "_id" not in self._data:
+            self._db.insert_one(self._data)
+            #limpiamos las variables modificadas al guardar
+            self._modified_vars.clear()
+        #si tiene id hay que actualizar
+        else:
+            camposActualizar={}
+            for campo in self._modified_vars:
+                #campo es el valor de los elementos guardados, nombre aforo...
+                camposActualizar[campo]=  self._data[campo]
+            self._db.update_one(
+                {"_id": self._data["_id"]},
+                {"$set": camposActualizar})
+            #limpiamos las variables modificadas al guardar
+            self._modified_vars.clear()
     def delete(self) -> None:
        if "_id" in self._data:#si tiene id
         self._db.delete_one({"_id": self._data["_id"]})#borra en mongo el documento con esa _id
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
-        """ 
-        Utiliza el metodo find de pymongo para realizar una consulta
-        de lectura en la BBDD.
-        find debe devolver un cursor de modelos ModelCursor
-
-        Parameters
-        ----------
-            filter : dict[str, str | dict]
-                diccionario con el criterio de busqueda de la consulta
-        Returns
-        -------
-            ModelCursor
-                cursor de modelos
-        """ 
-        #TODO
-        # cls es el puntero a la clase
-        pass #No olvidar eliminar esta linea una vez implementado
+    
+        cursor = cls._db.find(filter) # en mongo buscamos con el .find(que es de mongo), que va a devolver el curdsor de mondo del resultado
+        return ModelCursor(cls, cursor) # retornamos un ModelCursor al q le pasamo la clase cls y el cursor de la respustra del filtro 
 
     @classmethod
     def aggregate(cls, pipeline: list[dict]) -> pymongo.command_cursor.CommandCursor:
@@ -293,8 +300,9 @@ class ModelCursor:
         self.cursor = cursor
     
     def __iter__(self) -> Generator:
-        for doc in self.cursor:
-         return self.model(**doc)
+        while self.cursor:#va a repetirse mientras que el cursor tenga mas documentos
+         doc = next(self.cursor)# guardamos el diccionario del siguiente en doc
+         yield self.model(**doc)# validamos y creamos el objeto, y con el yield como pide el enunciado el objeto al for iterado
 
 def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals()) -> None:
     """ 
@@ -321,30 +329,37 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     
     with open(definitions_path, "r", encoding="utf-8") as f:
         definitions = yaml.safe_load(f)
+        #or [] es para evitar un error si el models.yml tiene null
         for tipo, variable in definitions.items():
                 indices = {}
-                for campo in variable.get("unique_indexes"): 
+                for campo in variable.get("unique_indexes") or []: 
                     indices[campo] = "unique"
-                for campo in variable.get("regular_indexes"):
+                for campo in variable.get("regular_indexes") or []:
                     indices[campo] = "asc"
-                if variable.get("location_index"):  
+                if variable.get("location_index") or []:  
                     indices[variable["location_index"]] = "geosphere"
                 cls = type(tipo, (Model,), {})
                 scope[tipo] = cls
-                cls.init_class(db_collection=db[tipo],indexes=variable.get("indexes", {}),required_vars=set(variable.get("required_vars", [])),admissible_vars=set(variable.get("admissible_vars", [])),)
-   
+                cls.init_class(db_collection=db[tipo],indexes=indices,required_vars=set(variable.get("required_vars", [])),admissible_vars=set(variable.get("admissible_vars", [])),)
 if __name__ == '__main__':
     
     # Inicializar base de datos y modelos con initApp
     #TODO
-    initApp()
+    initApp()#initApp funciona bien 
 
-    #Ejemplo
-    m = MiModelo(nombre="Pablo", apellido="Ramos", edad=18)
-    m.save()
-    m.nombre="Pedro"
-    print(m.nombre)
+    #pruebas iniciales 
+    r = Recinto(nombre="Wizink Center", aforo=15000, zonas=4, direccion="Avenida de Felipe II, s/n, Madrid")
+    # r.save() insertar funciona bien
 
+    print(f"Objeto guardado con ID: {r._data.get('_id')}")
+    r.aforo = 17000
+
+    print(f"Variables  para modificar: {r._modified_vars}")
+    # r.save() actualizar funciona bien 
+    # r.color_fachada = "Rojo" no se pueden insertar atributos no permitidos 
+    
+    
+    
     # Hacer pruebas para comprobar que funciona correctamente el modelo
     #TODO
     # Crear modelo
