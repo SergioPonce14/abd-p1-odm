@@ -191,23 +191,9 @@ class Model:
         self._db.delete_one({"_id": self._data["_id"]})#borra en mongo el documento con esa _id
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
-        """ 
-        Utiliza el metodo find de pymongo para realizar una consulta
-        de lectura en la BBDD.
-        find debe devolver un cursor de modelos ModelCursor
-
-        Parameters
-        ----------
-            filter : dict[str, str | dict]
-                diccionario con el criterio de busqueda de la consulta
-        Returns
-        -------
-            ModelCursor
-                cursor de modelos
-        """ 
-        #TODO
-        # cls es el puntero a la clase
-        pass #No olvidar eliminar esta linea una vez implementado
+    
+        cursor = cls._db.find(filter) # en mongo buscamos con el .find(que es de mongo), que va a devolver el curdsor de mondo del resultado
+        return ModelCursor(cls, cursor) # retornamos un ModelCursor al q le pasamo la clase cls y el cursor de la respustra del filtro 
 
     @classmethod
     def aggregate(cls, pipeline: list[dict]) -> pymongo.command_cursor.CommandCursor:
@@ -314,8 +300,9 @@ class ModelCursor:
         self.cursor = cursor
     
     def __iter__(self) -> Generator:
-        for doc in self.cursor:
-         return self.model(**doc)
+        while self.cursor:#va a repetirse mientras que el cursor tenga mas documentos
+         doc = next(self.cursor)# guardamos el diccionario del siguiente en doc
+         yield self.model(**doc)# validamos y creamos el objeto, y con el yield como pide el enunciado el objeto al for iterado
 
 def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals()) -> None:
     """ 
@@ -353,8 +340,7 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
                     indices[variable["location_index"]] = "geosphere"
                 cls = type(tipo, (Model,), {})
                 scope[tipo] = cls
-                cls.init_class(db_collection=db[tipo],indexes=variable.get("indexes", {}),required_vars=set(variable.get("required_vars", [])),admissible_vars=set(variable.get("admissible_vars", [])),)
-   
+                cls.init_class(db_collection=db[tipo],indexes=indices,required_vars=set(variable.get("required_vars", [])),admissible_vars=set(variable.get("admissible_vars", [])),)
 if __name__ == '__main__':
     
     # Inicializar base de datos y modelos con initApp
