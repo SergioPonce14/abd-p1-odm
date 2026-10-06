@@ -38,12 +38,15 @@ def getLocationPoint(address: str) -> Point:
             #TODO
             # Es necesario proporcionar un user_agent para utilizar la API
             # Utilizar un nombre aleatorio para el user_agent
-            location = Nominatim(user_agent="Mi-Nombre-Aleatorio").geocode(address)
+            location = Nominatim(user_agent="SergioIsaacPractica").geocode(address)
         except GeocoderTimedOut:
             # Puede lanzar una excepcion si se supera el tiempo de espera
             # Volver a intentarlo
             continue
     #TODO
+    if location is None:
+        raise ValueError(f"No se pudieron obtener coordenadas")
+    return Point((location.longitude,location.latitude))
     # Devolver un GeoJSON de tipo punto con la latitud y longitud almacenadas.
     # Si no se consiguieron coordenadas, lanzar ValueError: la funcion no puede
     # devolver un punto inventado ni None silenciosamente. Es lo que espera la
@@ -348,14 +351,14 @@ if __name__ == '__main__':
     initApp()#initApp funciona bien 
 
     #pruebas iniciales 
-    r = Recinto(nombre="Wizink Center", aforo=15000, zonas=4, direccion="Avenida de Felipe II, s/n, Madrid")
-    # r.save() insertar funciona bien
+    r = Recinto(nombre="Estadio de Prueba", aforo=5000, direccion="Plaza Mayor, Madrid")    
 
     print(f"Objeto guardado con ID: {r._data.get('_id')}")
-    r.aforo = 17000
+    r.zonas = 2
 
     print(f"Variables  para modificar: {r._modified_vars}")
     # r.save() actualizar funciona bien 
+    r.save()
     # r.color_fachada = "Rojo" no se pueden insertar atributos no permitidos 
     
     
