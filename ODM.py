@@ -303,9 +303,9 @@ class ModelCursor:
         self.cursor = cursor
     
     def __iter__(self) -> Generator:
-        while self.cursor.alive:#va a repetirse mientras que el cursor tenga mas documentos
-         doc = next(self.cursor)# guardamos el diccionario del siguiente en doc
+        for doc in self.cursor:#va a repetirse mientras que el cursor tenga mas documentos y guardamos el diccionario del en doc
          yield self.model(**doc)# validamos y creamos el objeto, y con el yield como pide el enunciado el objeto al for iterado
+        
 
 def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals()) -> None:
     """ 
