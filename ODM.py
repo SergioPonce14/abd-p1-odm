@@ -303,7 +303,7 @@ class ModelCursor:
         self.cursor = cursor
     
     def __iter__(self) -> Generator:
-        while self.cursor:#va a repetirse mientras que el cursor tenga mas documentos
+        while self.cursor.alive:#va a repetirse mientras que el cursor tenga mas documentos
          doc = next(self.cursor)# guardamos el diccionario del siguiente en doc
          yield self.model(**doc)# validamos y creamos el objeto, y con el yield como pide el enunciado el objeto al for iterado
 
