@@ -351,36 +351,50 @@ if __name__ == '__main__':
     initApp()#initApp funciona bien 
 
     #pruebas iniciales 
-    r = Recinto(nombre="Estadio de Prueba", aforo=5000, direccion="Plaza Mayor, Madrid")    
 
-    print(f"Objeto guardado con ID: {r._data.get('_id')}")
-    r.zonas = 2
+    #print(f"Objeto guardado con ID: {r._data.get('_id')}")
+    #r.zonas = 2
 
-    print(f"Variables  para modificar: {r._modified_vars}")
+    #print(f"Variables  para modificar: {r._modified_vars}")
     # r.save() actualizar funciona bien 
-    r.save()
+    #r.save()
     # r.color_fachada = "Rojo" no se pueden insertar atributos no permitidos 
-    
     
     
     # Hacer pruebas para comprobar que funciona correctamente el modelo
     #TODO
     # Crear modelo
-
+    r = Recinto(nombre="a222222222a2222222as23a222a2", aforo=5000, direccion="Plaza Mayor, Madrid")   
     # Asignar nuevo valor a variable admitida del objeto 
-
+    r.zonas = 2
     # Asignar nuevo valor a variable no admitida del objeto 
-
+    try:
+        r.color_fachada = "Rojo"
+    except ValueError:
+        pass
     # Guardar
-
+    r.save()
     # Asignar nuevo valor a variable admitida del objeto
-
+    r.zonas = 5
     # Guardar
+    r.save()
 
     # Buscar nuevo documento con find
-
+    cursor= Recinto.find({"nombre":"Estadio de Prueba"})
+    for rec in cursor:
+        print(rec.nombre)
     # Obtener primer documento
 
+    cursor2=Recinto.find({})
+    primer_recinto = next(iter(cursor2), None)
+
+    if primer_recinto:
+        print(primer_recinto.nombre)
+    else:
+        print("No se ha encontrado ningún recinto.")
+
     # Modificar valor de variable admitida
+    primer_recinto.zonas = 20
 
     # Guardar
+    primer_recinto.save()
